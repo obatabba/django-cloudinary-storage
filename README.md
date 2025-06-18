@@ -121,14 +121,35 @@ class TestModel(models.Model):
     image = models.ImageField(upload_to='images/', blank=True)
 ```
 
-All you need to do is to add two lines to `settings.py`:
+If you're using the latest version of django or version 5.1 and above, all you need to do is to define `STORAGES` dictionary in `settings.py`:
+
+```python
+
+STORAGES = {
+  'default': {
+    'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage' # or any media storage you'd like to use.
+  },
+  'staticfiles': {                                                 # this is the storage for static files
+    'BACKEND': 'django.core.files.storage.FileSystemStorage'       # this is django's default storage for static files, for using cloudinry as static files storage see usage with static files section
+  },
+}
+
+```
+
+and add `MEDIA_URL` to your `settings.py` as well:
 
 ```python
 MEDIA_URL = '/media/'  # or any prefix you choose
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 ```
 
 And that's it! All your models with `ImageField` will be connected to Cloudinary.
+
+Now if you're using older versions of django (<5.1), just add this instead of `STORAGES` to your `settings.py` file:
+
+```python
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+```
+and `MEDIA_URL` setting stays as is.
 
 Now, in order to put this image into your template, you can just type:
 
@@ -154,13 +175,22 @@ However, if you are going to use it for videos and/or raw files, let's continue.
 ### Usage with raw files
 
 If your users can upload text or other raw files, but not images, you would just use different default storage
-in `settings.py`:
+in `settings.py`. For django>=5.1:
 
+```python
+STORAGES = {
+  'default': {
+    'BACKEND': 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
+  },
+  # ...
+}
+```
+and for django<5.1:
 ```python
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
 ```
 
-But what if they could upload both types? Well, not a problem! Just set `DEFAULT_FILE_STORAGE` setting to the most
+But what if they could upload both types? Well, not a problem! Just set the default file storage to the most
 common resource type, and for fields of different type, you will need to set a correct storage individually, like this:
 
 ```python
@@ -174,7 +204,7 @@ class TestModelWithRawFileAndImage(models.Model):
     image = models.ImageField(upload_to='images/', blank=True)  # no need to set storage, field will use the default one
 ```
 
-In above example we assumed `DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'`,
+In above example we assumed the default file storage is `cloudinary_storage.storage.MediaCloudinaryStorage`,
 that's why we set storage explicitly only for `raw_file`.
 
 ### Usage with video files
@@ -199,11 +229,28 @@ class TestModelWithVideoAndImage(models.Model):
 
 ## Usage with static files
 
-In order to move your static files to Cloudinary, update your `settings.py`:
+In order to move your static files to Cloudinary, update your `settings.py`.
+Again, for django>=5.1":
+```python
+
+STORAGES = {
+  'default': {
+    # your media files storage...
+  'staticfiles': {
+    'BACKEND': 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+  },
+}
+
+```
+and for django<5.1:
+```python
+STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+```
+
+then add this to `settings.py` regardless of django version:
 
 ```python
 STATIC_URL = '/static/'
-STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
 ```
 
 After that, run Django `collectstatic` command:
